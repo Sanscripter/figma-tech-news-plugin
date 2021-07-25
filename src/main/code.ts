@@ -10,32 +10,110 @@ figma.showUI(__html__, { visible: false });
 figma.ui.onmessage = msg => {
 
 	if (msg.type == 'news-fetched') {
-		
-		const nodes: SceneNode[] = [];
+		try {
 
-		console.log(msg)
-		
-		if (figma.currentPage.selection.length !== 1) {
-			return "Select a single node."
+			const cover = figma.currentPage
+				.children.find(node => node.name == 'GIRO_TECH_COVER_TEMPLATE');
+
+			const newsTemplate = figma.currentPage
+				.children.find(node => node.name == 'GIRO_TECH_NEWS_TEMPLATE');
+
+			const cta = figma.currentPage
+				.children.find(node => node.name == 'GIRO_TECH_CTA_TEMPLATE');
+
+			const allRows = figma.currentPage
+				.children.filter(node => node.name.startsWith('GIRO_TECH_COVER_'));
+
+			const Y = cover.y + (cover.height + 300) * allRows.length;
+			const TODAY = new Date().toLocaleDateString();
+			const LATERAL_SPACING = 100;
+
+			const newCover = cover.clone();
+			newCover.name = `GIRO_TECH_COVER_${TODAY}`
+			newCover.y = Y;
+			figma.currentPage.appendChild(newCover);
+
+			const cards = msg.news.map(async (story: any, i: number) => {
+				console.log(story)
+				let card = (newsTemplate as FrameNode).clone();
+				card.name = `GIRO_TECH_NEWS_${TODAY}_${i}`;
+				card.y = Y;
+				card.x = cover.x + cover.width + LATERAL_SPACING + i * (card.width + LATERAL_SPACING);
+				
+				const fontRegular = await figma.loadFontAsync({ family: "Open Sans", style: "Regular" });
+				const fontEB = await figma.loadFontAsync({ family: "Open Sans", style: "Bold" });
+
+				const title = card.children.find(node => node.name == 'NEWS_TITLE');
+				await figma.loadFontAsync({ family: "Open Sans", style: "ExtraBold" })
+				.then(() => {
+						console.log('title', title);
+						(title as TextNode).characters = story.title;
+					});
+				
+				const content = card.children.find(node => node.name == 'NEWS_CONTENT');
+				await figma.loadFontAsync({ family: "Open Sans", style: "Regular" })
+				.then(() => {
+					console.log('content', content);
+					(content as TextNode).characters = story.content;
+				});
+				
+				const source = card.children.find(node => node.name == 'NEWS_SOURCE');
+				console.log('source', source);
+				(source as TextNode).characters = `fonte: ${story.source}`;
+
+			});
+			cards.forEach(card => {
+				figma.currentPage.appendChild(card);
+			});
+			const newCta = cta.clone();
+			newCta.name = `GIRO_TECH_CTA_${TODAY}`
+			newCta.y = Y;
+			newCta.x = cover.x + cover.width + LATERAL_SPACING + msg.news.length * (LATERAL_SPACING + newsTemplate.width);
+			figma.currentPage.appendChild(newCta)
+
+			figma.closePlugin()
+
+
+		} catch (e) {
+			return e;
 		}
 
-		const node = figma.currentPage.selection[0]
-		if (node.type !== 'TEXT') {
-			return "Select a single text node."
-		}
+
+
+
+		// // let coverNode = figma.getNodeById('514:633');
+		// // let cloneNode = coverNode.clone();
+		// // cloneNode.y = coverNode.y + 300 + coverNode.height;
+		// // figma.currentPage.appendChild(cloneNode);
+		// // figma.viewport.scrollAndZoomIntoView([coverNode]);
+		// // console.log(cloneNode);
+		// // console.log(coverNode);
+
+		// const nodes: SceneNode[] = [];
+
+		// console.log(msg)
+
+		// if (figma.currentPage.selection.length !== 1) {
+		// 	return "Select a single node."
+		// }
+
+		// const node = figma.currentPage.selection[0]
+		// if (node.type !== 'TEXT') {
+		// 	return "Select a single text node."
+		// }
 
 		// figma.root.appendChild()
 
-		console.log(node)
+		// console.log(node)
 
-		figma.loadFontAsync({ family: "Open Sans", style: "Regular" })
-			.then(r => {
-				figma.loadFontAsync({ family: "Open Sans", style: "Bold" })
-					.then( rr=> {
-						node.characters = msg.response[0].content;
-						figma.closePlugin()
-					})
-			})
+		// figma.loadFontAsync({ family: "Open Sans", style: "Regular" })
+		// 	.then(r => {
+		// 		figma.loadFontAsync({ family: "Open Sans", style: "Bold" })
+		// 			.then( rr=> {
+		// 				node.characters = msg.response[0].content;
+		// 				figma.closePlugin()
+		// 			})
+		// 	})
 
 	}
 	// One way of distinguishing between different types of messages sent from
